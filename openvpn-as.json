@@ -1,0 +1,58 @@
+{
+  "variables": {
+    "name": "openvpn-as-2.7.5-{{isotime \"2006-01-02T1504\"}}",
+    "source_ami": "OpenVPN Access Server 2.7.5-fe8020db-5343-4c43-9e65-5ed4a825c931-ami-0c56f53c16ad84dcd.4",
+    "open_vpn_version": "2.7.5",
+    "region": "us-west-2",
+    "vpc_id": "",
+    "subnet_id": "",
+    "ssh_username": "openvpnas",
+    "ssh_keypair_name": "prod-openvpn-as",
+    "ssh_private_key_file": "prod-openvpn-as",
+    "build_script": "./scripts/setup_base_ami.sh"
+  },
+  "builders": [{
+    "type": "amazon-ebs",
+    "region": "{{user `region`}}",
+    "vpc_id": "{{user `vpc_id`}}",
+    "subnet_id": "{{user `subnet_id`}}",
+    "associate_public_ip_address": "true",
+    "source_ami_filter": {
+      "filters": {
+        "virtualization-type": "hvm",
+        "name": "{{user `source_ami`}}",
+        "root-device-type": "ebs"
+      },
+      "owners": ["679593333241"],
+      "most_recent": true
+    },
+    "instance_type": "t3a.small",
+    "ssh_username": "{{user `ssh_username`}}",
+    "ssh_keypair_name": "{{user `ssh_keypair_name`}}",
+    "ssh_private_key_file": "{{user `ssh_private_key_file`}}",
+    "ami_name": "{{user `name`}}",
+    "run_tags" : {
+      "Name" : "{{user `name`}}",
+      "Tool" : "Packer"
+    },
+    "tags" : {
+      "Name" : "{{user `name`}}",
+      "Application": "OpenVPN Access Server {{user `open_vpn_version`}}",
+      "OS_Version": "Ubuntu 18.04 LTS",
+      "Timestamp": "{{isotime \"2006-01-02T1504\"}}"
+    }
+  }],
+  "provisioners" : [
+    {
+      "type" : "shell",
+      "environment_vars": [
+        "ANSIBLE_VERSION=2.9.6",
+        "PYTHON_VERSION=python3"
+      ],
+      "scripts" : [
+        "./{{user `build_script`}}",
+        "./scripts/install_base_ami_tools.sh"
+      ]
+    }
+  ]
+}

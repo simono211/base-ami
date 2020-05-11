@@ -1,0 +1,69 @@
+{
+  "variables": {
+    "name": "jenkins-build-agent-terraform-{{env `TF_VERSION`}}-{{isotime \"2006-01-02T1504\"}}",
+    "source_ami": "ubuntu/images/*ubuntu-bionic-18.04-amd64-server-*",
+    "region": "us-west-2",
+    "vpc_id": "",
+    "subnet_id": "",
+    "ssh_username": "ubuntu",
+    "ssh_keypair_name": "JenkinsBuildAgent",
+    "ssh_private_key_file": "",
+    "build_script": "./scripts/setup_base_ami.sh",
+    "tf_version": "{{env `TF_VERSION`}}"
+  },
+  "builders": [{
+    "type": "amazon-ebs",
+    "region": "{{user `region`}}",
+    "vpc_id": "{{user `vpc_id`}}",
+    "subnet_id": "{{user `subnet_id`}}",
+    "launch_block_device_mappings": [{
+      "device_name": "/dev/sda1",
+      "volume_size": 20,
+      "volume_type": "gp2",
+      "delete_on_termination": true
+    }],
+    "source_ami_filter": {
+      "filters": {
+        "virtualization-type": "hvm",
+        "name": "{{user `source_ami`}}",
+        "root-device-type": "ebs"
+      },
+      "owners": ["099720109477"],
+      "most_recent": true
+    },
+    "instance_type": "t3a.medium",
+    "ssh_username": "{{user `ssh_username`}}",
+    "ssh_keypair_name": "{{user `ssh_keypair_name`}}",
+    "ssh_private_key_file": "{{user `ssh_private_key_file`}}",
+    "ami_name": "{{user `name`}}",
+    "run_tags" : {
+      "Name" : "{{user `name`}}",
+      "Tool" : "Packer"
+    },
+    "tags" : {
+      "Name" : "{{user `name`}}",
+      "Application": "Jenkins Build Agent",
+      "OS_Version": "Ubuntu 18.04",
+      "Terraform_Version": "{{user `tf_version`}}",
+      "Timestamp": "{{isotime \"2006-01-02T1504\"}}"
+    }
+  }],
+  "provisioners" : [
+    {
+      "type": "file",
+      "source": "./hashicorp.asc",
+      "destination": "/tmp/hashicorp.asc"
+    },
+    {
+      "type" : "shell",
+      "environment_vars": [
+        "TF_VERSION={{user `tf_version`}}"
+      ],
+      "scripts" : [
+        "./{{user `build_script`}}",
+        "./scripts/install_docker.sh",
+        "./scripts/install_build_tools.sh"
+      ]
+    }
+  ]
+}

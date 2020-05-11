@@ -1,0 +1,60 @@
+{
+  "variables": {
+    "aws_access_key": "",
+    "aws_secret_key": "",
+    "name": "artifactory-18.04-{{isotime \"2006-01-02T1504\"}}",
+    "source_ami": "ubuntu/images/*ubuntu-bionic-18.04-amd64-server-*",
+    "region": "us-west-2",
+    "vpc_id": "",
+    "subnet_id": "",
+    "ssh_username": "ubuntu",
+    "ssh_keypair_name": "prod-artifactory",
+    "ssh_private_key_file": "prod-artifactory",
+    "build_script": "./scripts/setup_base_ami.sh"
+  },
+  "builders": [{
+    "type": "amazon-ebs",
+    "access_key": "{{user `aws_access_key`}}",
+    "secret_key": "{{user `aws_secret_key`}}",
+    "region": "{{user `region`}}",
+    "vpc_id": "{{user `vpc_id`}}",
+    "subnet_id": "{{user `subnet_id`}}",
+    "source_ami_filter": {
+      "filters": {
+        "virtualization-type": "hvm",
+        "name": "{{user `source_ami`}}",
+        "root-device-type": "ebs"
+      },
+      "owners": ["099720109477"],
+      "most_recent": true
+    },
+    "instance_type": "t3.medium",
+    "ssh_username": "{{user `ssh_username`}}",
+    "ssh_keypair_name": "{{user `ssh_keypair_name`}}",
+    "ssh_private_key_file": "{{user `ssh_private_key_file`}}",
+    "ami_name": "{{user `name`}}",
+    "run_tags" : {
+      "Name" : "{{user `name`}}",
+      "Tool" : "Packer"
+    },
+    "tags" : {
+      "Name" : "{{user `name`}}",
+      "Application": "Artifactory",
+      "OS_Version": "Ubuntu 18.04",
+      "Timestamp": "{{isotime \"2006-01-02T1504\"}}"
+    }
+  }],
+  "provisioners" : [
+    {
+      "type" : "shell",
+      "scripts" : [
+        "./{{user `build_script`}}",
+        "./scripts/install_docker.sh"
+      ]
+    },
+    {
+      "type" : "shell",
+      "script" : "./scripts/enable_ena_support.sh"
+    }
+  ]
+}
